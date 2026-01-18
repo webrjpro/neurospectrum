@@ -6,12 +6,12 @@ First off, thank you for considering contributing! ❤️
 
 ### 🐛 Reporting Bugs
 
-- Use the [bug report template](https://github.com/webrjpro/neurospetrum/issues/new?template=bug_report.md)
+- Use the [bug report template](https://github.com/webrjpro/neurospectrum/issues/new?template=bug_report.md)
 - Include browser version and screenshots if possible
 
 ### 💡 Suggesting Features
 
-- Open an [enhancement request](https://github.com/webrjpro/neurospetrum/issues/new?labels=enhancement)
+- Open an [enhancement request](https://github.com/webrjpro/neurospectrum/issues/new?labels=enhancement)
 - Explain the use case and expected behavior
 
 ### 🌍 Adding Translations

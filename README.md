@@ -16,7 +16,7 @@ This tool is for educational and self-knowledge purposes only. > It does not pro
 
 Always consult a qualified neuropsychologist or psychiatrist for clinical evaluation.
 
- Try the Live Demo
+**🔗 [Try the Live Demo](https://webrjpro.github.io/neurospectrum)**
 
 ✨ Features
 
@@ -136,7 +136,7 @@ For detailed methodology, see docs/methodology.md.
 
 Option 1: Online Demo
 
-Visit **[neurospectrum.app](https://webrjpro.github.io/neurospetrum)**
+Visit **[neurospectrum.app](https://webrjpro.github.io/neurospectrum)** (GitHub Pages hosted)
 
 Option 2: Local Setup
 
@@ -144,18 +144,23 @@ Since this is a zero-dependency project, no npm or node required!
 
 ## Clone the repository
 
-git clone https://github.com/webrjpro/neurospetrum.git
+```bash
+git clone https://github.com/webrjpro/neurospectrum.git
+cd neurospectrum
+```
 
 ## Open the file
 
-cd neurospectrum
+```bash
 open index.html  # macOS
 start index.html # Windows
 xdg-open index.html # Linux
+```
+```bash
+npx serve .
+```
 
-
-Or serve with a simple HTTP server:
-
+Then visit [http://localhost:3000](http://localhost:3000) in your
 npx serve .
 ## Visit [http://localhost:3000](http://localhost:3000)
 
@@ -230,11 +235,11 @@ Suggest a feature →
 
 If you use NeuroSpectrum in research or clinical practice, please cite:
 
-@software{neurospectrum2026,
-  author = {Your Name},
+@software{neCarlos Antonio de Oliveira Piquet},
   title = {NeuroSpectrum: Multilingual Screening Tool for Neurodivergent Traits},
   year = {2026},
   version = {5.0},
+  url = {https://github.com/webrjpro/neurospec
   url = {https://github.com/webrjpro/neurospetrum},
   note = {Open-source psychoeducational tool based on DSM-5, RAADS-R, and CAT-Q}
 }
