@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroSpectrum | Ultimate Edition</title>
+    <meta name="description" content="Ferramenta psicoeducativa de rastreio de traços neurodivergentes.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        game: {
+                            dark: '#0f172a',
+                            card: '#1e293b',
+                            accent: '#6366f1',
+                            glow: '#818cf8',
+                            success: '#10b981',
+                            warning: '#f59e0b'
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                        'fade-in': 'fadeIn 0.3s ease-out forwards',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        fadeIn: {
+                            'from': { opacity: '0', transform: 'scale(0.95)' },
+                            'to': { opacity: '1', transform: 'scale(1)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { 
+            background-color: #0f172a; 
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+            color: #f8fafc;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .neon-border {
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .neon-border:hover {
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+            border-color: #818cf8;
+        }
+
+        .option-btn:active { transform: scale(0.98); }
+
+        .avatar-option { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .avatar-option.selected {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.6);
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        .slide-enter { animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        @media print {
+            body { background: white !important; color: black !important; }
+            #intro-view, #quiz-view, header, #print-btn-container, .no-print, #about-modal { display: none !important; }
+            #results-view { display: block !important; }
+            .glass-panel { 
+                background: white !important; 
+                border: 1px solid #ddd !important; 
+                box-shadow: none !important; 
+                color: black !important;
+            }
+            canvas { border: 1px solid #eee; max-width: 300px; margin: 0 auto; display: block; }
+            .text-white { color: black !important; }
+            .text-slate-300, .text-slate-400 { color: #555 !important; }
+            h2, h3, h4 { color: #000 !important; }
+            .bg-slate-800\/50 { background: #f9f9f9 !important; border: 1px solid #ddd !important; }
+            #result-avatar { border: 1px solid #000 !important; color: #000 !important; background: #fff !important; }
+            a { text-decoration: underline; color: blue !important; }
+        }
+        
+        .progress-initial {
+            width: 0%;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white overflow-x-hidden">
+
+    <header class="w-full glass-panel sticky top-0 z-50 border-b border-slate-700/50">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <div class="absolute inset-0 bg-indigo-500 blur rounded-full opacity-50 animate-pulse"></div>
+                    <svg class="w-8 h-8 text-indigo-400 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white">NEURO<span class="text-indigo-400">SPECTRUM</span></h1>
+                    <div class="text-[10px] text-indigo-300 font-mono tracking-widest uppercase">Ultimate Edition v5.0</div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <!-- Lang Switch -->
+                <div class="flex bg-slate-800 rounded-lg p-1 border border-slate-700">
+                    <button onclick="changeLang('pt')" id="btn-pt" class="px-2 py-1 text-[10px] font-bold rounded hover:bg-slate-700 transition-all">PT</button>
+                    <button onclick="changeLang('en')" id="btn-en" class="px-2 py-1 text-[10px] font-bold rounded hover:bg-slate-700 transition-all">EN</button>
+                    <button onclick="changeLang('es')" id="btn-es" class="px-2 py-1 text-[10px] font-bold rounded hover:bg-slate-700 transition-all">ES</button>
+                </div>
+
+                <button onclick="toggleAbout()" title="Sobre" class="text-slate-400 hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </button>
+
+                <!-- XP HUD -->
+                <div id="xp-hud" class="hidden flex items-center gap-4 bg-slate-800/80 px-4 py-2 rounded-full border border-slate-700">
+                    <div class="flex flex-col items-end">
+                        <span class="text-[10px] text-slate-400 font-mono uppercase" data-i18n="hudProgress">Coleta</span>
+                        <span id="progress-pct" class="text-xs font-bold text-indigo-400">0%</span>
+                    </div>
+                    <div class="w-24 h-2 bg-slate-700 rounded-full overflow-hidden">
+                        <div id="xp-bar" class="h-full bg-gradient-to-r from-indigo-600 to-purple-500 transition-all duration-700 progress-initial"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-4xl relative">
+        
+        <!-- About Modal -->
+        <div id="about-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in" onclick="if(event.target === this) toggleAbout()">
+            <div class="glass-panel max-w-lg w-full rounded-2xl p-8 relative">
+                <button onclick="toggleAbout()" class="absolute top-4 right-4 text-slate-400 hover:text-white">✕</button>
+                <h3 class="text-2xl font-bold text-white mb-4" data-i18n="aboutTitle">Sobre o Projeto</h3>
+                <div class="space-y-4 text-slate-300 text-sm leading-relaxed">
+                    <p data-i18n="aboutP1">...</p>
+                    <p data-i18n="aboutP2">...</p>
+                    <p data-i18n="aboutP3">...</p>
+                </div>
+                <div class="mt-6 pt-6 border-t border-slate-700 flex justify-between items-center">
+                    <span class="text-[10px] text-slate-500 italic" data-i18n="closeHint">Clique fora para fechar</span>
+                    <button onclick="toggleAbout()" class="px-4 py-2 bg-indigo-600 rounded-lg text-white font-bold text-xs uppercase" data-i18n="btnClose">Fechar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- View 1: Setup & Intro -->
+        <section id="intro-view" class="slide-enter flex flex-col items-center justify-center min-h-[70vh]">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-emerald-400" data-i18n="introTitle">Mapeamento Neural Assistido</h2>
+                <p class="text-slate-400 text-lg max-w-2xl mx-auto" data-i18n="introDesc">Ferramenta de pré-rastreio...</p>
+                <div id="resume-alert" class="hidden mt-4 inline-block bg-indigo-900/40 border border-indigo-500/50 px-4 py-2 rounded-full text-xs text-indigo-300 animate-pulse" data-i18n="resumeAlert">Dados encontrados...</div>
+            </div>
+
+            <div class="glass-panel p-8 rounded-2xl w-full max-w-3xl mb-8 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-50"></div>
+                
+                <!-- Age Selection -->
+                <div class="mb-8">
+                    <h3 class="text-xs font-mono text-indigo-300 mb-4 uppercase tracking-widest text-center" data-i18n="configProfile">Configuração</h3>
+                    <div class="flex justify-center gap-4">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="age-group" value="adolescent" class="peer sr-only" onchange="setAge(this.value)">
+                            <div class="px-6 py-3 rounded-lg border border-slate-600 bg-slate-800 peer-checked:bg-indigo-600 peer-checked:border-indigo-400 peer-checked:text-white text-slate-400 transition-all hover:border-indigo-500">
+                                <span class="block text-sm font-bold text-center" data-i18n="ageYoung">Jovem</span>
+                                <span class="block text-[10px] text-center opacity-70" data-i18n="ageYoungDesc">(-18)</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="age-group" value="adult" class="peer sr-only" onchange="setAge(this.value)" checked>
+                            <div class="px-6 py-3 rounded-lg border border-slate-600 bg-slate-800 peer-checked:bg-indigo-600 peer-checked:border-indigo-400 peer-checked:text-white text-slate-400 transition-all hover:border-indigo-500">
+                                <span class="block text-sm font-bold text-center" data-i18n="ageAdult">Adulto</span>
+                                <span class="block text-[10px] text-center opacity-70" data-i18n="ageAdultDesc">(18+)</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Avatar Selection -->
+                <h3 class="text-center text-xs font-mono text-slate-500 mb-4 uppercase tracking-widest" data-i18n="avatarLabel">Avatar</h3>
+                <div class="grid grid-cols-4 gap-4 mb-8">
+                    <button class="avatar-option group relative aspect-square rounded-xl border border-slate-700 bg-slate-800/50 hover:border-indigo-400 flex items-center justify-center selected" onclick="selectAvatar(1, this)"><div class="text-3xl group-hover:scale-110 transition-transform">🧠</div></button>
+                    <button class="avatar-option group relative aspect-square rounded-xl border border-slate-700 bg-slate-800/50 hover:border-indigo-400 flex items-center justify-center" onclick="selectAvatar(2, this)"><div class="text-3xl group-hover:scale-110 transition-transform">👁️</div></button>
+                    <button class="avatar-option group relative aspect-square rounded-xl border border-slate-700 bg-slate-800/50 hover:border-indigo-400 flex items-center justify-center" onclick="selectAvatar(3, this)"><div class="text-3xl group-hover:scale-110 transition-transform">🧬</div></button>
+                    <button class="avatar-option group relative aspect-square rounded-xl border border-slate-700 bg-slate-800/50 hover:border-indigo-400 flex items-center justify-center" onclick="selectAvatar(4, this)"><div class="text-3xl group-hover:scale-110 transition-transform">⚙️</div></button>
+                </div>
+
+                <div class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-8 flex items-start gap-3 text-left">
+                    <span class="text-xl">⚖️</span>
+                    <div class="text-xs text-amber-100/80 leading-relaxed">
+                        <strong class="text-amber-400 block mb-1" data-i18n="disclaimerTitle">Termo</strong>
+                        <span data-i18n="disclaimerText">...</span>
+                    </div>
+                </div>
+
+                <button id="start-btn" class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold tracking-wide transition-all shadow-lg flex items-center justify-center gap-2">
+                    <span class="uppercase font-mono text-sm" data-i18n="startBtn">Iniciar</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                </button>
+            </div>
+        </section>
+
+        <!-- View 2: Questions -->
+        <section id="quiz-view" class="hidden max-w-3xl mx-auto pt-4">
+            <div class="flex justify-between items-end mb-4 px-2">
+                <span id="category-badge" class="font-mono text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded border border-indigo-500/30 uppercase tracking-wider">...</span>
+                <span class="font-mono text-xs text-slate-500"><span id="q-current">01</span> / <span id="q-total">--</span></span>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-1 relative overflow-hidden slide-enter neon-border">
+                <div class="absolute top-0 left-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300 progress-initial" id="progress-bar-top"></div>
+                <div class="p-6 md:p-10">
+                    <h3 id="question-text" class="text-xl md:text-2xl font-semibold text-white mb-8 leading-snug min-h-[80px] flex items-center">...</h3>
+                    <div id="options-grid" class="grid gap-3"></div>
+                </div>
+                <div class="bg-slate-900/50 p-4 border-t border-white/5 flex justify-between items-center backdrop-blur-sm">
+                    <button id="prev-btn" class="text-slate-400 hover:text-white font-mono text-xs uppercase tracking-wider disabled:opacity-20 transition-colors flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                        <span data-i18n="backBtn">Voltar</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- View 3: Report -->
+        <section id="results-view" class="hidden slide-enter pt-4 print:pt-0">
+            <div class="grid lg:grid-cols-12 gap-8">
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="glass-panel rounded-2xl p-6 border-t-4 border-indigo-500 print:border-none print:shadow-none">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div id="result-avatar" class="w-16 h-16 rounded-xl bg-slate-800 flex items-center justify-center text-4xl shadow-lg border border-slate-600 print:bg-white print:text-black">🧠</div>
+                            <div>
+                                <h3 class="text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-1" data-i18n="resultTitle">Resultado</h3>
+                                <h2 id="result-class" class="text-lg font-bold text-white leading-tight print:text-black">...</h2>
+                            </div>
+                        </div>
+                        <div class="relative w-full aspect-square bg-slate-900/50 rounded-full border border-slate-700/50 shadow-inner p-4 print:bg-white print:border-slate-200">
+                            <canvas id="radarChart"></canvas>
+                        </div>
+                        <div class="mt-6 pt-4 border-t border-slate-700/50 grid grid-cols-2 gap-4 text-xs">
+                            <div><span class="block text-slate-500 uppercase font-mono text-[10px]" data-i18n="metaProfile">Perfil</span><span id="meta-age" class="text-slate-300 print:text-black font-bold">Adulto</span></div>
+                            <div><span class="block text-slate-500 uppercase font-mono text-[10px]" data-i18n="metaDate">Data</span><span id="meta-date" class="text-slate-300 print:text-black">--/--/--</span></div>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel rounded-2xl p-6 border-l-4 border-emerald-500 print:border print:shadow-none no-print">
+                        <h4 class="text-xs font-bold text-emerald-400 uppercase mb-3 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                            <span data-i18n="resourcesTitle">Recursos Úteis</span>
+                        </h4>
+                        <ul class="space-y-2 text-xs text-slate-400">
+                            <li><a href="https://www.abraca.autismo.br/" target="_blank" rel="noopener" class="hover:text-emerald-300 hover:underline transition-colors">ABRAÇA (BR)</a></li>
+                            <li><a href="https://neurodiversitylibrary.org/" target="_blank" rel="noopener" class="hover:text-emerald-300 hover:underline transition-colors">Neurodiversity Library (Intl)</a></li>
+                            <li><a href="https://confederacionautismo.org/" target="_blank" rel="noopener" class="hover:text-emerald-300 hover:underline transition-colors">Confederación Autismo (ES)</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-7 space-y-6">
+                    <div class="glass-panel rounded-2xl p-8 relative print:border-none print:shadow-none print:p-0">
+                        <div class="absolute -top-3 -right-3 no-print">
+                            <span class="bg-indigo-600 text-white text-[10px] font-bold px-3 py-1 rounded shadow-lg uppercase tracking-wider" data-i18n="reportBadge">Relatório Preliminar</span>
+                        </div>
+                        <h2 class="text-2xl font-bold text-white mb-2 print:text-black" data-i18n="analysisTitle">Análise Descritiva</h2>
+                        <div class="h-1 w-16 bg-indigo-500 rounded mb-6 print:bg-black"></div>
+                        <p id="result-desc" class="text-slate-300 leading-relaxed mb-6 text-sm print:text-gray-700 text-justify">...</p>
+
+                        <div class="grid grid-cols-1 gap-3 mb-6">
+                            <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700 print:bg-gray-50 print:border-gray-200">
+                                <div class="flex justify-between items-center mb-1"><h4 class="text-[10px] font-bold text-blue-400 uppercase print:text-blue-700" data-i18n="histTitle">Histórico</h4><span id="history-flag" class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-700">--</span></div>
+                                <p id="result-history" class="text-xs text-slate-400 print:text-gray-600">...</p>
+                            </div>
+                            <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700 print:bg-gray-50 print:border-gray-200">
+                                <div class="flex justify-between items-center mb-1"><h4 class="text-[10px] font-bold text-red-400 uppercase print:text-red-700" data-i18n="impTitle">Impacto</h4><span id="impact-flag" class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-700">--</span></div>
+                                <p id="result-impact" class="text-xs text-slate-400 print:text-gray-600">...</p>
+                            </div>
+                            <div id="context-box" class="bg-slate-800/50 rounded-lg p-3 border border-slate-700 print:bg-gray-50 print:border-gray-200">
+                                <div class="flex justify-between items-center mb-1"><h4 class="text-[10px] font-bold text-amber-400 uppercase print:text-amber-700" data-i18n="ctxTitle">Contexto</h4><span id="context-flag" class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-700">--</span></div>
+                                <p id="result-context" class="text-xs text-slate-400 print:text-gray-600">...</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-indigo-900/20 border-l-4 border-indigo-500 p-4 rounded-r-lg print:bg-gray-100 print:border-black">
+                            <h4 class="text-xs font-bold text-indigo-300 mb-1 uppercase print:text-black" data-i18n="recTitle">Encaminhamento</h4>
+                            <p id="result-support" class="text-xs text-slate-300 print:text-gray-700">...</p>
+                        </div>
+                    </div>
+
+                    <div class="text-center pt-4 flex flex-wrap gap-4 justify-center no-print" id="print-btn-container">
+                        <button onclick="window.print()" class="group inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-lg font-mono text-xs uppercase tracking-widest transition-all shadow-lg">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                            <span data-i18n="printBtn">PDF</span>
+                        </button>
+                        <button onclick="exportJSON()" class="group inline-flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-5 py-3 rounded-lg font-mono text-xs uppercase tracking-widest transition-all shadow-lg">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            <span data-i18n="exportBtn">JSON</span>
+                        </button>
+                         <button onclick="clearData()" class="group inline-flex items-center gap-2 text-red-400 hover:text-white transition-colors font-mono text-xs uppercase tracking-widest">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            <span data-i18n="resetBtn">Apagar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const I18N = {
+            pt: {
+                hudProgress: "Coleta", aboutTitle: "Sobre o Projeto", aboutP1: "Ferramenta <strong>psicoeducativa</strong> open-source para identificação preliminar de traços neurodivergentes.", aboutP2: "Baseado no DSM-5, RAADS-R e CAT-Q.", aboutP3: "<strong>Aviso:</strong> Não é diagnóstico médico.", btnClose: "Fechar", closeHint: "Clique fora para fechar", introTitle: "Mapeamento Neural Assistido", introDesc: "Ferramenta de pré-rastreio para identificação de padrões neurodivergentes.", resumeAlert: "Dados anteriores encontrados. Retomando...", configProfile: "Configuração", ageYoung: "Jovem", ageYoungDesc: "(-18 anos)", ageAdult: "Adulto", ageAdultDesc: "(18+ anos)", avatarLabel: "Avatar", disclaimerTitle: "Termo de Responsabilidade", disclaimerText: "Não substitui avaliação médica. Indica compatibilidade de traços, não diagnóstico.", startBtn: "Iniciar Triagem", backBtn: "Voltar", resultTitle: "Resultado", metaProfile: "Perfil", metaDate: "Data", resourcesTitle: "Recursos Úteis", reportBadge: "Relatório Preliminar", analysisTitle: "Análise Descritiva", histTitle: "Histórico do Desenvolvimento", impTitle: "Impacto Funcional", ctxTitle: "Contexto Emocional", recTitle: "Sugestão", printBtn: "Imprimir Relatório (PDF)", exportBtn: "Exportar Dados (JSON)", resetBtn: "Reiniciar", confirmReset: "Tem certeza que deseja apagar todos os dados?",
+                r1Title: "ALTA COMPATIBILIDADE", r1Desc: "Dados consistentes com neurodivergência (TEA). Histórico e prejuízo funcional presentes.", r1Supp: "Neuropsicólogo para diagnóstico diferencial.",
+                r2Title: "TRAÇOS SIGNIFICATIVOS (CONTEXTO)", r2Desc: "Traços elevados, mas estresse/ansiedade ou falta de histórico sugerem cautela.", r2Supp: "Tratar ansiedade/estresse e reavaliar.",
+                r3Title: "FENÓTIPO AMPLIADO", r3Desc: "Sensibilidades acima da média, sem prejuízo severo.", r3Supp: "Terapia para adaptação.",
+                r4Title: "PADRÃO NEUROTÍPICO", r4Desc: "Funcionamento compatível com a neurotipicidade.", r4Supp: "Nenhuma intervenção específica.",
+                rZeroTitle: "DADOS INSUFICIENTES", rZeroDesc: "Nenhuma resposta positiva detectada.",
+                flagConsistent: "CONSISTENTE", flagUncertain: "INCERTO", flagSignificant: "SIGNIFICATIVO", flagLow: "BAIXO", flagHigh: "ALTO (ALERTA)", flagNormal: "NORMAL",
+                histTrue: "Relato de comportamentos atípicos antes dos 7 anos.", histFalse: "Sem evidência clara no desenvolvimento precoce.", impTrue: "Prejuízo na vida diária.", impFalse: "Funcional/gerenciável.", ctxTrue: "Estresse pode inflar resultados.", ctxFalse: "Sem interferência significativa."
+            },
+            en: {
+                hudProgress: "Collection", aboutTitle: "About Project", aboutP1: "Open-source <strong>psychoeducational</strong> tool for preliminary neurodivergent trait ID.", aboutP2: "Based on DSM-5, RAADS-R, and CAT-Q.", aboutP3: "<strong>Warning:</strong> Not a medical diagnosis.", btnClose: "Close", closeHint: "Click outside to close", introTitle: "Assisted Neural Mapping", introDesc: "Screening tool for neurodivergent patterns.", resumeAlert: "Previous data found. Resuming...", configProfile: "Setup", ageYoung: "Youth", ageYoungDesc: "(-18 yrs)", ageAdult: "Adult", ageAdultDesc: "(18+ yrs)", avatarLabel: "Avatar", disclaimerTitle: "Disclaimer", disclaimerText: "Does not replace medical eval. Indicates trait compatibility, not diagnosis.", startBtn: "Start Screening", backBtn: "Back", resultTitle: "Result", metaProfile: "Profile", metaDate: "Date", resourcesTitle: "Resources", reportBadge: "Preliminary Report", analysisTitle: "Descriptive Analysis", histTitle: "Dev History", impTitle: "Func Impact", ctxTitle: "Emotional Context", recTitle: "Suggestion", printBtn: "Print PDF", exportBtn: "Export JSON", resetBtn: "Restart", confirmReset: "Are you sure?",
+                r1Title: "HIGH COMPATIBILITY", r1Desc: "Consistent with neurodivergence (ASD). History and impairment present.", r1Supp: "Neuropsychologist for diagnosis.",
+                r2Title: "SIGNIFICANT TRAITS (CONTEXT)", r2Desc: "Elevated traits, but stress/anxiety suggest caution.", r2Supp: "Treat anxiety/stress first.",
+                r3Title: "BROAD PHENOTYPE", r3Desc: "Above average sensitivities, no severe impairment.", r3Supp: "Adaptation therapy.",
+                r4Title: "NEUROTYPICAL PATTERN", r4Desc: "Compatible with neurotypical functioning.", r4Supp: "No intervention.",
+                rZeroTitle: "INSUFFICIENT DATA", rZeroDesc: "No positive response detected.",
+                flagConsistent: "CONSISTENT", flagUncertain: "UNCERTAIN", flagSignificant: "SIGNIFICANT", flagLow: "LOW", flagHigh: "HIGH (ALERT)", flagNormal: "NORMAL",
+                histTrue: "Atypical behaviors before age 7.", histFalse: "No clear early evidence.", impTrue: "Impairment in daily life.", impFalse: "Functional/manageable.", ctxTrue: "Stress may inflate results.", ctxFalse: "No significant interference."
+            },
+            es: {
+                hudProgress: "Recolección", aboutTitle: "Sobre el Proyecto", aboutP1: "Herramienta <strong>psicoeducativa</strong> de código abierto para identificar rasgos neurodivergentes.", aboutP2: "Basado en DSM-5, RAADS-R y CAT-Q.", aboutP3: "<strong>Aviso:</strong> No es un diagnóstico médico.", btnClose: "Cerrar", closeHint: "Clic fuera para cerrar", introTitle: "Mapeo Neural Asistido", introDesc: "Herramienta de rastreo de patrones neurodivergentes.", resumeAlert: "Datos anteriores encontrados. Reanudando...", configProfile: "Configuración", ageYoung: "Joven", ageYoungDesc: "(-18 años)", ageAdult: "Adulto", ageAdultDesc: "(18+ años)", avatarLabel: "Avatar", disclaimerTitle: "Descargo de Resp.", disclaimerText: "No reemplaza evaluación médica. Indica compatibilidad de rasgos, no diagnóstico.", startBtn: "Iniciar Rastreo", backBtn: "Volver", resultTitle: "Resultado", metaProfile: "Perfil", metaDate: "Fecha", resourcesTitle: "Recursos Útiles", reportBadge: "Reporte Preliminar", analysisTitle: "Análisis Descriptivo", histTitle: "Historial de Desarrollo", impTitle: "Impacto Funcional", ctxTitle: "Contexto Emocional", recTitle: "Sugerencia", printBtn: "Imprimir PDF", exportBtn: "Exportar JSON", resetBtn: "Reiniciar", confirmReset: "¿Estás seguro?",
+                r1Title: "ALTA COMPATIBILIDAD", r1Desc: "Datos consistentes con neurodivergencia (TEA). Historial e impacto presentes.", r1Supp: "Neuropsicólogo para diagnóstico diferencial.",
+                r2Title: "RASGOS SIGNIFICATIVOS (CONTEXTO)", r2Desc: "Rasgos elevados, pero estrés/ansiedad sugieren precaución.", r2Supp: "Tratar ansiedad/estrés y reevaluar.",
+                r3Title: "FENOTIPO AMPLIADO", r3Desc: "Sensibilidades por encima del promedio, sin deterioro grave.", r3Supp: "Terapia de adaptación.",
+                r4Title: "PATRÓN NEUROTÍPICO", r4Desc: "Compatible con funcionamiento neurotípico.", r4Supp: "Ninguna intervención específica.",
+                rZeroTitle: "DATOS INSUFICIENTES", rZeroDesc: "No se detectaron respuestas positivas.",
+                flagConsistent: "CONSISTENTE", flagUncertain: "INCIERTO", flagSignificant: "SIGNIFICATIVO", flagLow: "BAJO", flagHigh: "ALTO (ALERTA)", flagNormal: "NORMAL",
+                histTrue: "Comportamientos atípicos antes de los 7 años.", histFalse: "Sin evidencia temprana clara.", impTrue: "Deterioro en la vida diaria.", impFalse: "Funcional/manejanble.", ctxTrue: "El estrés puede inflar resultados.", ctxFalse: "Sin interferencia significativa."
+            }
+        };
+
+        const CATEGORIES = {
+            HISTORY: { id: 'history', label: { pt: 'Infância', en: 'Childhood', es: 'Infancia' }, color: '#3b82f6' },
+            IMPACT: { id: 'impact', label: { pt: 'Impacto', en: 'Impact', es: 'Impacto' }, color: '#ef4444' },
+            CONTEXT: { id: 'context', label: { pt: 'Estresse', en: 'Stress', es: 'Estrés' }, color: '#f59e0b' },
+            SOCIAL: { id: 'social', label: { pt: 'Social', en: 'Social', es: 'Social' }, color: '#6366f1' },
+            ROUTINE: { id: 'routine', label: { pt: 'Rotina', en: 'Routine', es: 'Rutina' }, color: '#8b5cf6' },
+            SENSORY: { id: 'sensory', label: { pt: 'Sensorial', en: 'Sensory', es: 'Sensorial' }, color: '#10b981' },
+            MASKING: { id: 'masking', label: { pt: 'Camuflagem', en: 'Masking', es: 'Camuflaje' }, color: '#ec4899' }
+        };
+
+        const QUESTIONS = [
+            { id: 101, text: { pt: "Na infância (antes dos 7 anos), eu tinha interesses muito específicos ou brincava de forma repetitiva.", en: "In childhood (before age 7), I had very specific interests or played repetitively.", es: "En la infancia (antes de los 7), tenía intereses muy específicos o jugaba de forma repetitiva." }, category: 'HISTORY', weight: 3 },
+            { id: 102, text: { pt: "Meus pais relatavam reações exageradas a barulhos/texturas quando pequeno.", en: "Parents reported exaggerated reactions to noises/textures when little.", es: "Mis padres reportaban reacciones exageradas a ruidos/texturas de pequeño." }, category: 'HISTORY', weight: 2 },
+            { id: 301, text: { pt: "Estou passando por estresse agudo ou burnout.", en: "Currently going through acute stress or burnout.", es: "Pasando por estrés agudo o burnout actualmente." }, category: 'CONTEXT', weight: 1 },
+            { id: 302, text: { pt: "Tenho suspeita/diagnóstico de Ansiedade ou TDAH.", en: "Suspect/diagnosed with Anxiety or ADHD.", es: "Tengo sospecha/diagnóstico de Ansiedad o TDAH." }, category: 'CONTEXT', weight: 1 },
+            { id: 303, text: { pt: "Minha capacidade social piora muito quando cansado.", en: "Social capacity worsens greatly when tired.", es: "Mi capacidad social empeora mucho al estar cansado." }, category: 'CONTEXT', weight: 2 },
+            { id: 201, text: { pt: "Dificuldades sociais/sensoriais atrapalham empregos ou relacionamentos.", en: "Social/sensory difficulties hinder jobs or relationships.", es: "Dificultades sociales/sensoriales afectan empleos o relaciones." }, category: 'IMPACT', weight: 3 },
+            { id: 1, text: { pt: "Sinto que 'falo outra língua' socialmente.", en: "Feel like I 'speak another language' socially.", es: "Siento que 'hablo otro idioma' socialmente." }, category: 'SOCIAL', weight: 2 },
+            { id: 3, text: { pt: "Frequentemente interpretado como rude sem intenção.", en: "Often interpreted as rude unintentionally.", es: "A menudo interpretado como grosero sin intención." }, category: 'SOCIAL', weight: 2 },
+            { id: 5, text: { pt: "Contato visual forçado causa desconforto.", en: "Forced eye contact causes discomfort.", es: "El contacto visual forzado causa incomodidad." }, category: 'SOCIAL', weight: 2 },
+            { id: 6, text: { pt: "Mudanças imprevistas causam desregulação emocional.", en: "Unforeseen changes cause emotional dysregulation.", es: "Cambios imprevistos causan desregulación emocional." }, category: 'ROUTINE', weight: 2 },
+            { id: 7, text: { pt: "Interesses intensos me fazem perder noção do tempo.", en: "Intense interests make me lose track of time.", es: "Intereses intensos me hacen perder la noción del tiempo." }, category: 'ROUTINE', weight: 1 },
+            { id: 10, text: { pt: "Sons específicos causam raiva instantânea.", en: "Specific sounds cause instant anger.", es: "Sonidos específicos causan ira instantánea." }, category: 'SENSORY', weight: 2 },
+            { id: 14, text: { pt: "Uso 'máscaras' sociais frequentemente.", en: "I use social 'masks' frequently.", es: "Uso 'máscaras' sociales frecuentemente." }, category: 'MASKING', weight: 2 },
+            { id: 17, text: { pt: "Preciso de isolamento após eventos sociais.", en: "Need isolation after social events.", es: "Necesito aislamiento tras eventos sociales." }, category: 'MASKING', weight: 1 }
+        ];
+
+        const OPTIONS = [
+            { label: { pt: "Totalmente", en: "Totally", es: "Totalmente" }, value: 3, icon: "⚡" },
+            { label: { pt: "Parcialmente", en: "Partially", es: "Parcialmente" }, value: 2, icon: "🔹" },
+            { label: { pt: "Pouco", en: "A Little", es: "Poco" }, value: 1, icon: "🔸" },
+            { label: { pt: "Não / Nunca", en: "No / Never", es: "No / Nunca" }, value: 0, icon: "⭕" }
+        ];
+
+        let gameState = { lang: 'pt', index: 0, answers: {}, avatar: { icon: '🧠' }, ageGroup: 'adult' };
+
+        // --- Core ---
+        function detectLang() {
+            const browser = navigator.language.slice(0, 2);
+            return ['pt', 'en', 'es'].includes(browser) ? browser : 'pt';
+        }
+
+        function t(key) { return I18N[gameState.lang][key] || key; }
+
+        function updateUI() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if(I18N[gameState.lang][key]) el.innerHTML = I18N[gameState.lang][key];
+            });
+            ['pt','en','es'].forEach(l => {
+                const btn = document.getElementById(`btn-${l}`);
+                btn.className = gameState.lang === l ? "px-2 py-1 text-[10px] font-bold rounded bg-indigo-600 text-white transition-all" : "px-2 py-1 text-[10px] font-bold rounded text-slate-400 hover:text-white transition-all";
+            });
+            if(!document.getElementById('quiz-view').classList.contains('hidden')) renderQuestion();
+            if(!document.getElementById('results-view').classList.contains('hidden')) finishGame();
+        }
+
+        function changeLang(lang) { gameState.lang = lang; saveState(); updateUI(); }
+        function toggleAbout() { document.getElementById('about-modal').classList.toggle('hidden'); }
+        function saveState() { localStorage.setItem('ns_v5_data', JSON.stringify(gameState)); }
+        function setAge(val) { gameState.ageGroup = val; }
+        
+        function loadState() {
+            const data = localStorage.getItem('ns_v5_data');
+            if (data) {
+                gameState = JSON.parse(data);
+                if(!gameState.lang) gameState.lang = detectLang();
+                updateUI();
+                document.getElementById('resume-alert').classList.remove('hidden');
+                if (gameState.index >= QUESTIONS.length) setTimeout(finishGame, 100);
+                else if (gameState.index > 0) startQuiz(true);
+            } else {
+                gameState.lang = detectLang();
+                updateUI();
+            }
+        }
+
+        function clearData() {
+            if(confirm(t('confirmReset'))) { localStorage.removeItem('ns_v5_data'); location.reload(); }
+        }
+
+        function selectAvatar(id, el) {
+            document.querySelectorAll('.avatar-option').forEach(btn => btn.classList.remove('selected'));
+            el.classList.add('selected');
+            gameState.avatar.icon = el.innerText.trim();
+        }
+
+        function startQuiz(isResume = false) {
+            document.getElementById('intro-view').classList.add('hidden');
+            document.getElementById('quiz-view').classList.remove('hidden');
+            document.getElementById('xp-hud').classList.remove('hidden');
+            document.getElementById('xp-hud').classList.add('flex');
+            
+            const date = new Date().toLocaleDateString(gameState.lang === 'pt' ? 'pt-BR' : (gameState.lang === 'es' ? 'es-ES' : 'en-US'));
+            document.getElementById('meta-date').innerText = date;
+            const ageText = gameState.ageGroup === 'adult' ? t('ageAdult') : t('ageYoung');
+            document.getElementById('meta-age').innerText = `${ageText}`;
+            
+            if(!isResume) gameState.index = 0;
+            renderQuestion();
+        }
+
+        document.getElementById('start-btn').addEventListener('click', () => startQuiz(false));
+        document.getElementById('prev-btn').addEventListener('click', () => { if(gameState.index > 0) { gameState.index--; saveState(); renderQuestion(); }});
+
+        function renderQuestion() {
+            const q = QUESTIONS[gameState.index];
+            let qText = q.text[gameState.lang];
+            
+            // Contextual substitution fix
+            if (gameState.ageGroup === 'adolescent') {
+                const replacements = {
+                    pt: { empregos: "estudos", trabalho: "escola", profissional: "escolar", relacionamentos: "amizades" },
+                    en: { jobs: "studies", work: "school", professional: "academic", relationships: "friendships" },
+                    es: { empleos: "estudios", trabajo: "escuela", profesional: "escolar", relaciones: "amistades" }
+                };
+                const langRules = replacements[gameState.lang];
+                if (langRules) {
+                    Object.keys(langRules).forEach(k => {
+                        const regex = new RegExp(k, 'gi');
+                        qText = qText.replace(regex, langRules[k]);
+                    });
+                }
+            }
+
+            document.getElementById('question-text').innerText = qText;
+            document.getElementById('category-badge').innerText = CATEGORIES[q.category].label[gameState.lang];
+            document.getElementById('category-badge').style.color = CATEGORIES[q.category].color;
+            document.getElementById('q-current').innerText = (gameState.index + 1).toString().padStart(2, '0');
+            document.getElementById('q-total').innerText = QUESTIONS.length;
+            
+            const pct = (gameState.index / QUESTIONS.length) * 100;
+            document.getElementById('progress-bar-top').style.width = `${pct}%`;
+            document.getElementById('xp-bar').style.width = `${pct}%`;
+            document.getElementById('progress-pct').innerText = `${Math.round(pct)}%`;
+
+            const grid = document.getElementById('options-grid');
+            grid.innerHTML = '';
+            
+            OPTIONS.forEach(opt => {
+                const btn = document.createElement('button');
+                const isSelected = gameState.answers[q.id] === opt.value;
+                btn.className = `option-btn w-full text-left p-4 rounded-xl border transition-all flex items-center gap-3 group ${isSelected ? 'bg-indigo-600/20 border-indigo-500 shadow-md ring-1 ring-indigo-500' : 'bg-slate-800 border-slate-700 hover:border-indigo-400 hover:bg-slate-750'}`;
+                btn.innerHTML = `<span class="text-xl opacity-80">${opt.icon}</span><span class="font-medium text-slate-200 group-hover:text-white text-sm">${opt.label[gameState.lang]}</span>`;
+                btn.onclick = () => {
+                    gameState.answers[q.id] = opt.value;
+                    saveState();
+                    if(gameState.index < QUESTIONS.length - 1) { gameState.index++; setTimeout(renderQuestion, 150); } 
+                    else { gameState.index++; saveState(); finishGame(); }
+                };
+                grid.appendChild(btn);
+            });
+            document.getElementById('prev-btn').disabled = gameState.index === 0;
+        }
+
+        function finishGame() {
+            const scores = { history: 0, impact: 0, context: 0, traits: 0, traitsMax: 0 };
+            const rawScores = {}; 
+            Object.keys(CATEGORIES).forEach(k => rawScores[CATEGORIES[k].id] = 0);
+
+            QUESTIONS.forEach(q => {
+                const val = gameState.answers[q.id] || 0;
+                rawScores[q.category.toLowerCase()] += val;
+                if (q.category === 'HISTORY') scores.history += val;
+                else if (q.category === 'IMPACT') scores.impact += val;
+                else if (q.category === 'CONTEXT') scores.context += val;
+                else { scores.traits += val * q.weight; scores.traitsMax += 3 * q.weight; }
+            });
+
+            document.getElementById('intro-view').classList.add('hidden');
+            document.getElementById('quiz-view').classList.add('hidden');
+            document.getElementById('xp-hud').classList.add('hidden');
+            document.getElementById('results-view').classList.remove('hidden');
+            document.getElementById('result-avatar').innerText = gameState.avatar.icon;
+
+            const traitPct = scores.traitsMax > 0 ? (scores.traits / scores.traitsMax) * 100 : 0;
+            const hasHistory = scores.history >= 3; 
+            const hasImpact = scores.impact >= 3;
+            const highContext = scores.context >= 4; 
+            const totalScore = Object.values(rawScores).reduce((a, b) => a + b, 0);
+            
+            let title, desc, support, titleClass;
+
+            if (totalScore === 0) {
+                 title = t('rZeroTitle'); titleClass = "text-slate-400"; desc = t('rZeroDesc'); support = "---";
+            } else if (traitPct >= 65 && hasHistory && hasImpact) {
+                title = t('r1Title'); titleClass = "text-indigo-400"; desc = t('r1Desc'); support = t('r1Supp');
+            } else if (traitPct >= 65 && (highContext || !hasHistory)) {
+                title = t('r2Title'); titleClass = "text-amber-400"; desc = t('r2Desc'); support = t('r2Supp');
+            } else if (traitPct >= 40) {
+                title = t('r3Title'); titleClass = "text-blue-400"; desc = t('r3Desc'); support = t('r3Supp');
+            } else {
+                title = t('r4Title'); titleClass = "text-emerald-400"; desc = t('r4Desc'); support = t('r4Supp');
+            }
+
+            document.getElementById('result-class').innerText = title;
+            document.getElementById('result-class').className = `text-lg font-bold leading-tight print:text-black ${titleClass}`;
+            document.getElementById('result-desc').innerText = desc;
+            document.getElementById('result-support').innerText = support;
+
+            updateFlag('history-flag', hasHistory ? t('flagConsistent') : t('flagUncertain'), hasHistory ? "text-blue-400" : "text-slate-500");
+            document.getElementById('result-history').innerText = hasHistory ? t('histTrue') : t('histFalse');
+            updateFlag('impact-flag', hasImpact ? t('flagSignificant') : t('flagLow'), hasImpact ? "text-red-400" : "text-slate-500");
+            document.getElementById('result-impact').innerText = hasImpact ? t('impTrue') : t('impFalse');
+            updateFlag('context-flag', highContext ? t('flagHigh') : t('flagNormal'), highContext ? "text-amber-400" : "text-slate-500");
+            document.getElementById('result-context').innerText = highContext ? t('ctxTrue') : t('ctxFalse');
+
+            // Store for export
+            gameState.lastResult = { title, desc, rawScores, traitPct, date: new Date().toISOString() };
+            saveState();
+
+            drawChart(rawScores);
+        }
+
+        function updateFlag(id, text, colorClass) {
+            const el = document.getElementById(id);
+            el.innerText = text;
+            el.className = `text-[10px] font-bold px-2 py-0.5 rounded bg-slate-700 print:bg-gray-200 print:text-black ${colorClass}`;
+        }
+
+        function drawChart(scores) {
+            const canvas = document.getElementById('radarChart');
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            const w = rect.width, h = rect.height, cx = w/2, cy = h/2, r = (Math.min(w,h)/2) - 40;
+            const catsToDraw = ['SOCIAL', 'ROUTINE', 'SENSORY', 'MASKING', 'CONTEXT'];
+            const total = catsToDraw.length, step = (Math.PI*2)/total;
+
+            ctx.clearRect(0,0,w,h);
+            ctx.strokeStyle = '#334155'; ctx.lineWidth = 1;
+            for(let l=1; l<=4; l++) {
+                ctx.beginPath(); const tr = (r/4)*l;
+                for(let i=0; i<total; i++) {
+                    const a = i*step - Math.PI/2;
+                    const x = cx + Math.cos(a)*tr, y = cy + Math.sin(a)*tr;
+                    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+                } ctx.closePath(); ctx.stroke();
+            }
+
+            ctx.beginPath();
+            catsToDraw.forEach((k, i) => {
+                const a = i*step - Math.PI/2, val = scores[CATEGORIES[k].id];
+                let norm = Math.min(val / 7, 1); if(norm < 0.1) norm = 0.1;
+                const tr = norm * r, x = cx + Math.cos(a)*tr, y = cy + Math.sin(a)*tr;
+                if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+            });
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(99, 102, 241, 0.5)'; ctx.fill();
+            ctx.strokeStyle = '#818cf8'; ctx.stroke();
+
+            ctx.font = 'bold 10px JetBrains Mono'; ctx.textAlign = 'center'; ctx.fillStyle = '#94a3b8';
+            catsToDraw.forEach((k, i) => {
+                const a = i*step - Math.PI/2;
+                const x = cx + Math.cos(a)*(r+25), y = cy + Math.sin(a)*(r+25);
+                const label = CATEGORIES[k].label[gameState.lang].split('/')[0];
+                const score = scores[CATEGORIES[k].id];
+                ctx.fillText(`${label.toUpperCase()} (${score})`, x, y);
+            });
+        }
+
+        function exportJSON() {
+            if(!gameState.lastResult) return alert("Complete a triagem primeiro.");
+            const exportData = {
+                app: "NeuroSpectrum", version: "5.0", date: gameState.lastResult.date,
+                profile: { ageGroup: gameState.ageGroup, lang: gameState.lang },
+                scores: gameState.lastResult.rawScores,
+                result: { title: gameState.lastResult.title, description: gameState.lastResult.desc }
+            };
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `neurospectrum_${Date.now()}.json`; a.click();
+        }
+
+        loadState();
+    </script>
+</body>
+</html>
